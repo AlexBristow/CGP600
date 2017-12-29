@@ -83,7 +83,7 @@ c:\program files (x86)\microsoft directx sdk (june 2010)\include\xnamath.h(2732)
 c:\program files (x86)\microsoft directx sdk (june 2010)\include\xnamath.h(2742): warning C4838: conversion from 'unsigned int' to 'INT' requires a narrowing conversion
 c:\program files (x86)\microsoft directx sdk (june 2010)\include\xnamath.h(2743): warning C4838: conversion from 'unsigned int' to 'INT' requires a narrowing conversion
 c:\program files (x86)\microsoft directx sdk (june 2010)\include\xnamath.h(2754): warning C4838: conversion from 'unsigned int' to 'INT' requires a narrowing conversion
-e:\university\cgp600\alex bristow - tutorial 03 exercise 01\main.cpp(314): warning C4244: '=': conversion from 'UINT' to 'FLOAT', possible loss of data
-e:\university\cgp600\alex bristow - tutorial 03 exercise 01\main.cpp(315): warning C4244: '=': conversion from 'UINT' to 'FLOAT', possible loss of data
-  Alex Bristow - Tutorial 03 Exercise 01.vcxproj -> E:\University\CGP600\Alex Bristow - Tutorial 03 Exercise 01\Debug\Alex Bristow - Tutorial 03 Exercise 01.exe
-  Alex Bristow - Tutorial 03 Exercise 01.vcxproj -> E:\University\CGP600\Alex Bristow - Tutorial 03 Exercise 01\Debug\Alex Bristow - Tutorial 03 Exercise 01.pdb (Partial PDB)
+c:\users\sam\documents\github\cgp600\alex bristow - tutorial 03 exercise 01\main.cpp(314): warning C4244: '=': conversion from 'UINT' to 'FLOAT', possible loss of data
+c:\users\sam\documents\github\cgp600\alex bristow - tutorial 03 exercise 01\main.cpp(315): warning C4244: '=': conversion from 'UINT' to 'FLOAT', possible loss of data
+  Alex Bristow - Tutorial 03 Exercise 01.vcxproj -> C:\Users\Sam\Documents\GitHub\CGP600\Alex Bristow - Tutorial 03 Exercise 01\Debug\Alex Bristow - Tutorial 03 Exercise 01.exe
+  Alex Bristow - Tutorial 03 Exercise 01.vcxproj -> C:\Users\Sam\Documents\GitHub\CGP600\Alex Bristow - Tutorial 03 Exercise 01\Debug\Alex Bristow - Tutorial 03 Exercise 01.pdb (Partial PDB)
