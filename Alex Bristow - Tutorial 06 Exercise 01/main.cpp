@@ -11,6 +11,8 @@
 #define XM_NO_ALIGNMENT
 #include <xnamath.h>
 int (WINAPIV * __vsnprintf)(char *, size_t, const char*, va_list) = _vsnprintf;
+
+
 //////////////////////////////////////////////////////////////////////////////////////
 //	Global Variables
 //////////////////////////////////////////////////////////////////////////////////////
@@ -33,6 +35,7 @@ ID3D11Buffer*				g_pVertexBuffer;
 ID3D11VertexShader*			g_pVertexShader;
 ID3D11PixelShader*			g_pPixelShader;
 ID3D11InputLayout*			g_pInputLayout;
+ID3D11DepthStencilView*     g_pZBuffer;
 
 // Camera values
 float MovementX = 0;
@@ -63,12 +66,12 @@ struct CONSTANT_BUFFER0
 //vertacies globals
 POS_COL_VERTEX Vertices[] = {
 	// back face 
-	{XMFLOAT3(-1.0f, 1.0f, 1.0f),XMFLOAT4(1.0f,0.0f,0.0f,1.0f)},
-	{XMFLOAT3(-1.0f, -1.0f, 1.0f),XMFLOAT4(1.0f,0.0f,0.0f,1.0f)},
-	{XMFLOAT3(1.0f, 1.0f, 1.0f),XMFLOAT4(1.0f,0.0f,0.0f,1.0f)},
-	{XMFLOAT3(1.0f, 1.0f, 1.0f),XMFLOAT4(1.0f,0.0f,0.0f,1.0f)},
-	{XMFLOAT3(-1.0f, -1.0f, 1.0f),XMFLOAT4(1.0f,0.0f,0.0f,1.0f)},
-	{XMFLOAT3(1.0f, -1.0f, 1.0f),XMFLOAT4(1.0f,0.0f,0.0f,1.0f)},
+	{XMFLOAT3(-1.0f, 1.0f, 1.0f),XMFLOAT4(1.0f,1.0f,1.0f,1.0f)},
+	{XMFLOAT3(-1.0f, -1.0f, 1.0f),XMFLOAT4(1.0f,1.0f,1.0f,1.0f)},
+	{XMFLOAT3(1.0f, 1.0f, 1.0f),XMFLOAT4(1.0f,1.0f,1.0f,1.0f)},
+	{XMFLOAT3(1.0f, 1.0f, 1.0f),XMFLOAT4(1.0f,1.0f,1.0f,1.0f)},
+	{XMFLOAT3(-1.0f, -1.0f, 1.0f),XMFLOAT4(1.0f,1.0f,1.0f,1.0f)},
+	{XMFLOAT3(1.0f, -1.0f, 1.0f),XMFLOAT4(1.0f,1.0f,1.0f,1.0f)},
 
 	// front face
 	{XMFLOAT3(-1.0f, -1.0f, -1.0f),XMFLOAT4(1.0f,1.0f,1.0f,1.0f)},
@@ -386,8 +389,36 @@ D3D_FEATURE_LEVEL_10_0,
 
 	//if (FAILED(hr)) return hr;
 
+	//create a Zbuffer texture 
+	
+	D3D11_TEXTURE2D_DESC tex2dDesc;
+	ZeroMemory((&tex2dDesc), sizeof(tex2dDesc));
+
+	tex2dDesc.Width = width;
+	tex2dDesc.Height = height;
+	tex2dDesc.ArraySize = 1;
+	tex2dDesc.MipLevels = 1;
+	tex2dDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	tex2dDesc.SampleDesc.Count = sd.SampleDesc.Count;
+	tex2dDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	tex2dDesc.Usage = D3D11_USAGE_DEFAULT;
+
+	ID3D11Texture2D *pZBufferTexture;
+	hr = g_pD3DDevice->CreateTexture2D(&tex2dDesc, NULL, &pZBufferTexture);
+		//Error handling 
+	if (FAILED(hr)) return hr;
+
+	//create the z buffer
+	D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+	ZeroMemory(&dsvDesc, sizeof(dsvDesc));
+
+	dsvDesc.Format = tex2dDesc.Format;
+	dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	g_pD3DDevice->CreateDepthStencilView(pZBufferTexture, &dsvDesc, &g_pZBuffer);
+	pZBufferTexture->Release();
+
 	// Set the render target view
-	g_pImmediateContext->OMSetRenderTargets(1, &g_pBackBufferRTView, NULL);		//Sets the Render Target(usually 1)
+	g_pImmediateContext->OMSetRenderTargets(1, &g_pBackBufferRTView, g_pZBuffer);		//Sets the Render Target(usually 1)
 																				//Second parameter is a pointer to a list of render target views.
 																				//Third parameter is a list of depth/stencil views
 	// Set the viewport
@@ -521,52 +552,55 @@ void RenderFrame(void)
 
 	CONSTANT_BUFFER0 cb0_values;
 	cb0_values.RedAmount = 0.5f; // 50% of vertex value 
-	cb0_values.Scale = 5.0f;//
+	cb0_values.Scale = 1.0f;//
 	
-	XMMATRIX projection, world, view;
+	XMMATRIX projection, box_world, view;
+	XMMATRIX box_world2;
 
 	//world = XMMatrixTranslation(MovementX, MovementY, MovementZ);
 
 	//world = XMMatrixRotationZ(XMConvertToRadians(45));
 	//world *= XMMatrixTranslation(2, 0, 10);
 	
-	world = XMMatrixRotationX(XMConvertToRadians(degree));
-	world *= XMMatrixTranslation(MovementX, MovementY, MovementZ);
-	
-
+	box_world = XMMatrixRotationX(XMConvertToRadians(degree));
+	box_world *= XMMatrixTranslation(MovementX, MovementY, MovementZ);
 	projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(45.0), 640.0 / 480.0, 1.0, 100.0);
 	view = XMMatrixIdentity();
-	cb0_values.WorldViewProjection = world * view * projection;
-								
-	//uplad the new values for the cBuffer
-	g_pImmediateContext->UpdateSubresource(g_pConstantBuffer0, 0, 0, &cb0_values, 0, 0);
+	
+	
+	// box 1
 
+	//constant buffers information 
+	cb0_values.WorldViewProjection = box_world * view * projection;
+	//upload the new values for the cBuffer
+	g_pImmediateContext->UpdateSubresource(g_pConstantBuffer0, 0, 0, &cb0_values, 0, 0);
 	//seting the buffre to be active 
 	g_pImmediateContext->VSSetConstantBuffers(0, 1, &g_pConstantBuffer0);
-
-
 	//Colour of the back buffer
 	g_pImmediateContext->ClearRenderTargetView(g_pBackBufferRTView, g_clear_colour);
+	g_pImmediateContext->ClearDepthStencilView(g_pZBuffer, D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
+		
 	//Set Vertex Buffer
-
 	UINT stride = sizeof(POS_COL_VERTEX);
 	UINT offset = 0;
 	g_pImmediateContext->IASetVertexBuffers(0, 1, &g_pVertexBuffer, &stride, &offset);
-
 	//Select which primitive type to use 
 	g_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);	//used to tell the program how to draw the triangles 
-		//draws the Deiveice contect to the back buffer 3
-			//3 = The amount of vertices to draw
-			//0 = where in the vertext buffer to start from,  0 = start
-
-
-	
-
-
-
-
+	//draws the Deiveice contect to the back buffer
+	//36 = The amount of vertices to draw
+	//0 = where in the vertext buffer to start from,  0 = start 
 	//Draw the vertex Buffer to the back buffer 
 	g_pImmediateContext->Draw(36, 0);				
+
+
+	//drawing box 2 
+	box_world2 = XMMatrixRotationX(XMConvertToRadians(degree));
+	box_world2 *= XMMatrixTranslation(0, 0, 10);
+	
+	cb0_values.WorldViewProjection = box_world2 *view * projection;
+	g_pImmediateContext->UpdateSubresource(g_pConstantBuffer0, 0, 0, &cb0_values, 0, 0);
+	g_pImmediateContext->VSSetConstantBuffers(0, 1, &g_pConstantBuffer0);
+	g_pImmediateContext->Draw(36, 0);
 
 	// RENDER HERE
 
@@ -601,12 +635,12 @@ void RenderFrame(void)
 
 	//// revert the the colours  exercise 02 Extra 1b
 
-		//	if (g_clear_colour[0] >= 1.0f)
+	//	if (g_clear_colour[0] >= 1.0f)
 		//		{	
 		//			g_clear_colour[0] = 0.0f;
 		//		}
 
-		//	if (g_clear_colour[1] >= 1.0f)
+	//	if (g_clear_colour[1] >= 1.0f)
 		//		{
 		//			g_clear_colour[1] = 0.0f;
 		//		}
@@ -620,6 +654,8 @@ void RenderFrame(void)
 //////////////////////////////////////////////////////////////////////////////////////
 void ShutdownD3D()
 {
+
+	if (g_pZBuffer)				g_pZBuffer->Release();								//Releases' the Z buffer	
 	if (g_pVertexBuffer)		g_pVertexBuffer->Release();							//Releases' the Vertex Buffer 
 	if (g_pInputLayout)			g_pInputLayout->Release();							//Releases' the Input Layout
 	if (g_pVertexShader)		g_pVertexShader->Release();							//Releases' the Vertex Shader
